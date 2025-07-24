@@ -219,7 +219,7 @@ h6 {
   gap: 12px
 }
 
-.interests-box__tag {
+.interests-box__content li {
   background-color: white;
   padding: 6px 15px;
   border-radius: 40px;
