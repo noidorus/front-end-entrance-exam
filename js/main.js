@@ -81,8 +81,11 @@ class ResumeEditor {
 	#saveToStorage() {
 		try {
 			const data = this.#dataManager.collectElementsData(this.#editableElements);
-			this.#dataManager.saveData(data);
-			this.#saveIndicator.showSuccess();
+			const wasSaved = this.#dataManager.saveData(data);
+			
+			if (wasSaved) {
+				this.#saveIndicator.showSuccess();
+			}
 		} catch {
 			this.#saveIndicator.showError();
 		}

@@ -1,6 +1,9 @@
 export class DataManager {
 	/** @type {string} */
 	#storageKey;
+	
+	/** @type {string|null} */
+	#lastSavedDataHash = null;
 
 	/**
 	 * @param {string} storageKey - ключ для localStorage
@@ -15,7 +18,13 @@ export class DataManager {
 	loadData() {
 		try {
 			const savedData = localStorage.getItem(this.#storageKey);
-			return savedData ? JSON.parse(savedData) : null;
+			if (savedData) {
+				const data = JSON.parse(savedData);
+				this.#lastSavedDataHash = this.#calculateDataHash(data);
+				return data;
+			}
+			this.#lastSavedDataHash = null;
+			return null;
 		} catch (error) {
 			console.error('Error loading data from localStorage:', error);
 			throw new Error('Failed to load saved data');
@@ -24,10 +33,19 @@ export class DataManager {
 
 	/**
 	 * @param {Object} data - данные для сохранения
+	 * @returns {boolean} true если данные были сохранены, false если не изменились
 	 */
 	saveData(data) {
+		const currentDataHash = this.#calculateDataHash(data);
+		
+		if (this.#lastSavedDataHash === currentDataHash) {
+			return false;
+		}
+
 		try {
 			localStorage.setItem(this.#storageKey, JSON.stringify(data));
+			this.#lastSavedDataHash = currentDataHash;
+			return true;
 		} catch (error) {
 			console.error('Error saving data to localStorage:', error);
 			throw new Error('Failed to save data');
@@ -45,13 +63,26 @@ export class DataManager {
 			const elementKey = this.#generateElementKey(element, index);
 
 			if (element.dataset.type === 'list') {
+				const listData = this.#parseListContent(element);
 				data[elementKey] = {
 					type: 'list',
-					data: this.#parseListContent(element),
+					data: listData,
 				};
 			} else {
+				let htmlData = element.innerHTML;
+				
+				if (htmlData.includes('material-wave-ripple')) {
+					const tempDiv = document.createElement('div');
+					tempDiv.innerHTML = htmlData;
+					
+					const ripples = tempDiv.querySelectorAll('.material-wave-ripple');
+					ripples.forEach(ripple => ripple.remove());
+					
+					htmlData = tempDiv.innerHTML;
+				}
+				
 				data[elementKey] = {
-					data: element.innerHTML,
+					data: htmlData,
 				};
 			}
 		});
@@ -94,9 +125,16 @@ export class DataManager {
 	 * @returns {string} уникальный ключ
 	 */
 	#generateElementKey(element, index) {
-		const className = element.className || 'no-class';
+		const classList = Array.from(element.classList)
+			.filter(cls => !cls.startsWith('material-wave') && cls !== 'editing')
+			.sort()
+			.join(' ');
+		
+		const className = classList || 'no-class';
 		const id = element.id || 'no-id';
-		return `${className}-${id}-${index}`;
+		const tagName = element.tagName.toLowerCase();
+		
+		return `${tagName}-${className}-${id}-${index}`;
 	}
 
 	/**
@@ -147,5 +185,62 @@ export class DataManager {
 
 			return acc;
 		}, []);
+	}
+
+	/**
+	 * @param {Object} data - данные для хэширования
+	 * @returns {string} хэш данных
+	 */
+	#calculateDataHash(data) {
+		const sortedData = this.#deepSortObject(data);
+		const dataString = JSON.stringify(sortedData);
+		return this.#simpleHash(dataString);
+	}
+
+	/**
+	 * @param {any} obj - объект для сортировки
+	 * @returns {any} отсортированный объект
+	 */
+	#deepSortObject(obj) {
+		if (obj === null || typeof obj !== 'object') {
+			return obj;
+		}
+		
+		if (Array.isArray(obj)) {
+			return obj.map(item => this.#deepSortObject(item));
+		}
+		
+		const sortedObj = {};
+		const sortedKeys = Object.keys(obj).sort();
+		
+		for (const key of sortedKeys) {
+			sortedObj[key] = this.#deepSortObject(obj[key]);
+		}
+		
+		return sortedObj;
+	}
+
+	/**
+	 * @param {string} str - строка для хэширования
+	 * @returns {string} хэш строки
+	 */
+	#simpleHash(str) {
+		let hash = 0;
+		if (str.length === 0) return hash.toString();
+		
+		for (let i = 0; i < str.length; i++) {
+			const char = str.charCodeAt(i);
+			hash = ((hash << 5) - hash) + char;
+			hash = hash & hash;
+		}
+		
+		return Math.abs(hash).toString();
+	}
+
+	/**
+	 * Сброс кэша данных (принудительное сохранение при следующем вызове)
+	 */
+	resetDataCache() {
+		this.#lastSavedDataHash = null;
 	}
 }
