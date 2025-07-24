@@ -253,3 +253,21 @@ h6 {
 	background-color: #28d979;
 	color: #fff;
 }
+
+/* Editing styles */
+[contenteditable="true"]:hover {
+	background-color: rgba(40, 217, 121, 0.08);
+	transition: background-color 0.2s ease;
+	cursor: text;
+}
+
+[contenteditable="true"].editing {
+	background-color: rgba(40, 217, 121, 0.12);
+	outline: 1px solid rgba(40, 217, 121, 0.3);
+	outline-offset: 2px;
+	border-radius: 3px;
+}
+
+[contenteditable="true"]:focus {
+	outline: none;
+}

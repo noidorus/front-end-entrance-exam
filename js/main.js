@@ -14,13 +14,10 @@ class ResumeEditor {
 		this.#findEditableElements();
 		this.#loadFromStorage();
 		this.#attachEventListeners();
-		this.addEditingStyles();
-		console.log('Resume Editor initialized');
 	}
 
 	#findEditableElements() {
 		this.editableElements = document.querySelectorAll('[contenteditable="true"]');
-		console.log(`Found ${this.editableElements.length} editable elements`);
 	}
 
 	#loadFromStorage() {
@@ -29,7 +26,6 @@ class ResumeEditor {
 			if (savedData) {
 				const data = JSON.parse(savedData);
 				this.#restoreData(data);
-				console.log('Data loaded from localStorage');
 			}
 		} catch (error) {
 			console.error('Error loading data:', error);
@@ -49,6 +45,11 @@ class ResumeEditor {
 		});
 	}
 
+	/**
+	 * @param {HTMLElement} element
+	 * @param {number} index
+	 * @returns {string}
+	 */
 	#getElementKey(element, index) {
 		return `${element.className}${index}` || `element-${index}`;
 	}
@@ -73,7 +74,6 @@ class ResumeEditor {
 		try {
 			localStorage.setItem(this.storageKey, JSON.stringify(data));
 			this.saveIndicator.showSuccess();
-			console.log('Data saved to localStorage');
 		} catch (error) {
 			console.error('Error saving data:', error);
 			this.saveIndicator.showError();
@@ -100,7 +100,6 @@ class ResumeEditor {
 			});
 		});
 
-		// Сохранение перед закрытием страницы
 		window.addEventListener('beforeunload', () => {
 			this.#saveToStorage();
 		});
@@ -108,6 +107,7 @@ class ResumeEditor {
 
 	/**
 	 * @param {HTMLElement} element
+	 * @returns {string[]}
 	 */
 	#parseListContent(element) {
 		return Array.from(element.childNodes).reduce((acc, { nodeType, textContent }) => {
@@ -118,30 +118,6 @@ class ResumeEditor {
 			}
 			return acc;
 		}, []);
-	}
-
-	// Добавляем базовые стили для редактирования
-	addEditingStyles() {
-		const style = document.createElement('style');
-		style.textContent = `
-			[contenteditable="true"]:hover {
-				background-color: rgba(40, 217, 121, 0.08);
-				transition: background-color 0.2s ease;
-				cursor: text;
-			}
-			
-			[contenteditable="true"].editing {
-				background-color: rgba(40, 217, 121, 0.12);
-				outline: 1px solid rgba(40, 217, 121, 0.3);
-				outline-offset: 2px;
-				border-radius: 3px;
-			}
-			
-			[contenteditable="true"]:focus {
-				outline: none;
-			}
-		`;
-		document.head.appendChild(style);
 	}
 }
 
