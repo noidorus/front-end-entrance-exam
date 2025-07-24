@@ -1,13 +1,36 @@
 import { SaveIndicator } from './saveIndecator.js';
+import { DataManager } from './dataManager.js';
+import { MaterialWave } from './materialWave.js';
 
 class ResumeEditor {
+	/** @type {string} */
+	static DEFAULT_STORAGE_KEY = 'resume-data';
+	
+	/** @type {number} */
+	static SAVE_DELAY = 100;
+	
 	/** @type {HTMLElement[]} */
-	editableElements = [];
-	storageKey = 'resume-data';
-	saveIndicator = new SaveIndicator();
+	#editableElements = [];
+	
+	/** @type {SaveIndicator} */
+	#saveIndicator;
+	
+	/** @type {DataManager} */
+	#dataManager;
+	
+	/** @type {MaterialWave} */
+	#materialWave;
+	
+	/** @type {number|null} */
+	#saveTimeoutId = null;
 
-	constructor(storageKey) {
-		this.storageKey = storageKey;
+	/**
+	 * @param {string} [storageKey=DEFAULT_STORAGE_KEY] - ключ для localStorage
+	 */
+	constructor(storageKey = ResumeEditor.DEFAULT_STORAGE_KEY) {
+		this.#saveIndicator = new SaveIndicator();
+		this.#dataManager = new DataManager(storageKey);
+		this.#materialWave = new MaterialWave({ autoInit: false });
 	}
 
 	init() {
@@ -17,109 +40,105 @@ class ResumeEditor {
 	}
 
 	#findEditableElements() {
-		this.editableElements = document.querySelectorAll('[contenteditable="true"]');
+		this.#editableElements = Array.from(
+			document.querySelectorAll('[contenteditable="true"]')
+		);
+
+		if (this.#editableElements.length === 0) {
+			console.warn('No editable elements found on the page');
+		} else {
+			this.#editableElements.forEach(element => {
+				this.#materialWave.attachToElement(element, { 
+					color: 'primary',
+					duration: 1000,
+				});
+			});
+		}
 	}
 
 	#loadFromStorage() {
 		try {
-			const savedData = localStorage.getItem(this.storageKey);
-			if (savedData) {
-				const data = JSON.parse(savedData);
-				this.#restoreData(data);
+			const data = this.#dataManager.loadData();
+			if (data) {
+				this.#dataManager.restoreElementsData(this.#editableElements, data);
 			}
-		} catch (error) {
-			console.error('Error loading data:', error);
+		} catch {
+			this.#saveIndicator.showError('Error loading saved data');
 		}
 	}
 
-	#restoreData(data) {
-		this.editableElements.forEach((element, index) => {
-			const elementKey = this.#getElementKey(element, index);
-			if (data[elementKey] === undefined) return;
+	#debouncedSave() {
+		if (this.#saveTimeoutId) {
+			clearTimeout(this.#saveTimeoutId);
+		}
 
-			if (data[elementKey].type === 'list') {
-				element.innerHTML = data[elementKey].data.map((item) => `<li>${item}</li>`).join('');
-			} else {
-				element.innerHTML = data[elementKey].data;
-			}
-		});
-	}
-
-	/**
-	 * @param {HTMLElement} element
-	 * @param {number} index
-	 * @returns {string}
-	 */
-	#getElementKey(element, index) {
-		return `${element.className}${index}` || `element-${index}`;
+		this.#saveTimeoutId = setTimeout(() => {
+			this.#saveToStorage();
+			this.#saveTimeoutId = null;
+		}, ResumeEditor.SAVE_DELAY);
 	}
 
 	#saveToStorage() {
-		const data = {};
-		this.editableElements.forEach((element, index) => {
-			const elementKey = this.#getElementKey(element, index);
-
-			if (element.dataset.type === 'list') {
-				data[elementKey] = {
-					type: 'list',
-					data: this.#parseListContent(element),
-				};
-			} else {
-				data[elementKey] = {
-					data: element.innerHTML,
-				};
-			}
-		});
-
 		try {
-			localStorage.setItem(this.storageKey, JSON.stringify(data));
-			this.saveIndicator.showSuccess();
-		} catch (error) {
-			console.error('Error saving data:', error);
-			this.saveIndicator.showError();
+			const data = this.#dataManager.collectElementsData(this.#editableElements);
+			this.#dataManager.saveData(data);
+			this.#saveIndicator.showSuccess();
+		} catch {
+			this.#saveIndicator.showError();
 		}
 	}
 
 	#attachEventListeners() {
-		this.editableElements.forEach((element) => {
-			element.addEventListener('focus', () => {
-				element.classList.add('editing');
-			});
+		this.#attachElementListeners();
+		this.#attachWindowListeners();
+	}
 
-			element.addEventListener('blur', () => {
-				element.classList.remove('editing');
-
-				if (element.dataset.type === 'list') {
-					const listContent = this.#parseListContent(element);
-					element.innerHTML = listContent.map((item) => `<li>${item}</li>`).join('');
-				}
-
-				setTimeout(() => {
-					this.#saveToStorage();
-				}, 100);
-			});
+	#attachElementListeners() {
+		this.#editableElements.forEach((element) => {
+			element.addEventListener('focus', this.#handleFocus.bind(this));
+			element.addEventListener('blur', this.#handleBlur.bind(this));
 		});
+	}
 
+	#attachWindowListeners() {
 		window.addEventListener('beforeunload', () => {
+			if (this.#saveTimeoutId) {
+				clearTimeout(this.#saveTimeoutId);
+			}
 			this.#saveToStorage();
 		});
 	}
 
-	/**
-	 * @param {HTMLElement} element
-	 * @returns {string[]}
-	 */
-	#parseListContent(element) {
-		return Array.from(element.childNodes).reduce((acc, { nodeType, textContent }) => {
-			if (nodeType === Node.ELEMENT_NODE || nodeType === Node.TEXT_NODE) {
-				if (textContent.trim()) {
-					return [...acc, textContent.trim()];
-				}
-			}
-			return acc;
-		}, []);
+	#handleFocus(event) {
+		const element = event.target;
+		element.classList.add('editing');
+	}
+
+	#handleBlur(event) {
+		const element = event.target;
+		element.classList.remove('editing');
+
+		if (element.dataset.type === 'list') {
+			this.#normalizeListContent(element);
+		}
+
+		this.#debouncedSave();
+	}
+
+	#normalizeListContent(element) {
+		this.#dataManager.normalizeListContent(element);
+	}
+
+	destroy() {
+		if (this.#saveTimeoutId) {
+			clearTimeout(this.#saveTimeoutId);
+		}
+		
+		this.#saveIndicator.destroy();
+		this.#materialWave.destroy();
+		this.#editableElements = [];
 	}
 }
 
-const resumeEditor = new ResumeEditor('resume-data');
+const resumeEditor = new ResumeEditor();
 resumeEditor.init();

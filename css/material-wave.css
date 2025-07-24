@@ -1,0 +1,108 @@
+/* Material Wave (Ripple) Effect */
+.material-wave {
+	position: relative;
+	overflow: hidden;
+	cursor: pointer;
+	transform: translate3d(0, 0, 0);
+}
+
+.material-wave-ripple {
+	position: absolute;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.3);
+	transform: scale(0);
+	animation: material-wave-animation 600ms cubic-bezier(0.4, 0, 0.2, 1);
+	pointer-events: none;
+	z-index: 1;
+}
+
+.material-wave-ripple.dark {
+	background: rgba(0, 0, 0, 0.15);
+}
+
+.material-wave-ripple.accent {
+	background: rgba(40, 217, 121, 0.25);
+}
+
+.material-wave-ripple.primary {
+	background: rgba(33, 150, 243, 0.25);
+}
+
+.material-wave-ripple.error {
+	background: rgba(244, 67, 54, 0.25);
+}
+
+@keyframes material-wave-animation {
+	0% {
+		transform: scale(0);
+		opacity: 1;
+	}
+	100% {
+		transform: scale(4);
+		opacity: 0;
+	}
+}
+
+/* Быстрая анимация для маленьких элементов */
+.material-wave-ripple.fast {
+	animation: material-wave-fast 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes material-wave-fast {
+	0% {
+		transform: scale(0);
+		opacity: 1;
+	}
+	100% {
+		transform: scale(2.5);
+		opacity: 0;
+	}
+}
+
+/* Медленная анимация для больших элементов */
+.material-wave-ripple.slow {
+	animation: material-wave-slow 800ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes material-wave-slow {
+	0% {
+		transform: scale(0);
+		opacity: 1;
+	}
+	100% {
+		transform: scale(5);
+		opacity: 0;
+	}
+}
+
+/* Вариант для темной темы */
+.material-wave.dark-theme .material-wave-ripple {
+	background: rgba(255, 255, 255, 0.2);
+}
+
+/* Особый стиль для кнопок */
+.material-wave.button {
+	transition: box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.material-wave.button:hover {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.material-wave.button:active {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Стили для редактируемых элементов */
+.material-wave.editable {
+	transition: all 0.2s ease;
+}
+
+.material-wave.editable:hover {
+	background-color: rgba(40, 217, 121, 0.05);
+}
+
+.material-wave.editable:focus {
+	background-color: rgba(40, 217, 121, 0.08);
+	outline: none;
+} 
