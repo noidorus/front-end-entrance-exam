@@ -68,6 +68,26 @@ export class DataManager {
 					type: 'list',
 					data: listData,
 				};
+			} else if (element.dataset.type === 'number') {
+				// Для элементов с data-type="number" сохраняем оригинальное значение
+				const originalValue = element.dataset.originalValue;
+				const percentageValue = element.dataset.percentageValue;
+				const currentText = element.textContent?.trim() || '';
+				
+				// Если нет data-атрибутов, парсим текущее содержимое
+				let valueToSave = originalValue || currentText;
+				let percentageToSave = percentageValue;
+				
+				if (!percentageToSave && currentText) {
+					const parsed = this.#parseNumberToPercentage(currentText);
+					percentageToSave = parsed ? parsed.toString() : '0';
+				}
+				
+				data[elementKey] = {
+					type: 'number',
+					originalValue: valueToSave,
+					percentageValue: percentageToSave || '0',
+				};
 			} else {
 				let htmlData = element.innerHTML;
 				
@@ -103,6 +123,8 @@ export class DataManager {
 
 			if (elementData.type === 'list') {
 				this.#restoreListContent(element, elementData.data);
+			} else if (elementData.type === 'number') {
+				this.#restoreNumberContent(element, elementData);
 			} else {
 				this.#sanitizeAndSetContent(element, elementData.data);
 			}
@@ -120,13 +142,96 @@ export class DataManager {
 	}
 
 	/**
+	 * Нормализует числовой контент и создает прогресс-бар
+	 * @param {HTMLElement} element 
+	 */
+	normalizeNumberContent(element) {
+		const rawValue = element.textContent?.trim() || '';
+		let percentage = this.#parseNumberToPercentage(rawValue);
+		let displayValue = rawValue;
+		
+		// Если валидация не прошла, используем значение по умолчанию
+		if (percentage === null) {
+			percentage = this.#getDefaultPercentage(element);
+			displayValue = `${percentage}%`;
+			console.warn(`Invalid number input "${rawValue}", using default: ${percentage}%`);
+		}
+		
+		// Сохраняем оригинальное текстовое значение для восстановления при фокусе
+		element.dataset.originalValue = displayValue;
+		element.dataset.percentageValue = percentage.toString();
+		
+		// Применяем прогресс-бар стили
+		this.#applyProgressMode(element, percentage);
+	}
+
+	/**
+	 * Восстанавливает текстовое значение при фокусе
+	 * @param {HTMLElement} element 
+	 */
+	restoreNumberText(element) {
+		const originalValue = element.dataset.originalValue;
+		const percentageValue = element.dataset.percentageValue;
+		
+		// Убираем прогресс-бар стили
+		this.#removeProgressMode(element);
+		
+		if (originalValue !== undefined) {
+			// Восстанавливаем оригинальное значение
+			element.textContent = originalValue;
+		} else if (percentageValue !== undefined) {
+			// Если нет оригинального, показываем процент
+			element.textContent = `${percentageValue}%`;
+		} else {
+			// Если ничего нет, показываем дефолт
+			element.textContent = `${this.#getDefaultPercentage(element)}%`;
+		}
+		
+		// Устанавливаем курсор в конец текста
+		setTimeout(() => {
+			if (element === document.activeElement) {
+				const range = document.createRange();
+				const selection = window.getSelection();
+				range.selectNodeContents(element);
+				range.collapse(false);
+				selection.removeAllRanges();
+				selection.addRange(range);
+			}
+		}, 0);
+	}
+
+	/**
+	 * Возвращает значение по умолчанию в зависимости от контекста элемента
+	 * @param {HTMLElement} element 
+	 * @returns {number} процент по умолчанию
+	 */
+	#getDefaultPercentage(element) {
+		// Для языков используем средний уровень
+		if (element.classList.contains('language-box__level')) {
+			return 50;
+		}
+		
+		// Для навыков используем начальный уровень
+		if (element.closest('.tools-box') || element.closest('.skills-box')) {
+			return 30;
+		}
+		
+		// По умолчанию средний уровень
+		return 60;
+	}
+
+	/**
 	 * @param {HTMLElement} element - элемент
 	 * @param {number} index - индекс элемента
 	 * @returns {string} уникальный ключ
 	 */
 	#generateElementKey(element, index) {
 		const classList = Array.from(element.classList)
-			.filter(cls => !cls.startsWith('material-wave') && cls !== 'editing')
+			.filter(cls => 
+				!cls.startsWith('material-wave') && 
+				cls !== 'editing' && 
+				cls !== 'progress-mode'
+			)
 			.sort()
 			.join(' ');
 		
@@ -185,6 +290,83 @@ export class DataManager {
 
 			return acc;
 		}, []);
+	}
+
+	/**
+	 * Извлекает процентное значение из текста
+	 * @param {string} text - исходный текст
+	 * @returns {number|null} - процент от 0 до 100 или null
+	 */
+	#parseNumberToPercentage(text) {
+		if (!text || typeof text !== 'string') return null;
+
+		// Убираем пробелы
+		const trimmedText = text.trim();
+		if (!trimmedText) return null;
+
+		// Проверяем, содержит ли строка только буквы (невалидно)
+		if (/^[a-zA-Zа-яА-Я\s]+$/.test(trimmedText)) {
+			return null;
+		}
+
+		// Удаляем все кроме цифр, точек и запятых
+		const cleanText = trimmedText.replace(/[^\d.,]/g, '');
+		
+		if (!cleanText) return null;
+
+		// Заменяем запятые на точки для парсинга
+		const numberStr = cleanText.replace(/,/g, '.');
+		const number = parseFloat(numberStr);
+
+		if (isNaN(number) || number < 0) return null;
+
+		// Если число больше 1, считаем что это уже процент
+		if (number > 1) {
+			return Math.min(Math.max(number, 0), 100);
+		}
+		
+		// Если меньше или равно 1, переводим в проценты
+		return Math.min(Math.max(number * 100, 0), 100);
+	}
+
+	/**
+	 * Применяет прогресс-бар стили к элементу
+	 * @param {HTMLElement} element - элемент
+	 * @param {number} percentage - процент от 0 до 100
+	 */
+	#applyProgressMode(element, percentage) {
+		element.classList.add('progress-mode');
+		element.style.setProperty('--progress-width', `${percentage}%`);
+		element.textContent = ''; // Очищаем текст, ::after покажет процент
+	}
+
+	/**
+	 * Убирает прогресс-бар стили с элемента
+	 * @param {HTMLElement} element - элемент
+	 */
+	#removeProgressMode(element) {
+		element.classList.remove('progress-mode');
+		element.style.removeProperty('--progress-width');
+	}
+
+	/**
+	 * Восстанавливает данные для элемента с data-type="number"
+	 * @param {HTMLElement} element - элемент
+	 * @param {Object} elementData - данные элемента
+	 */
+	#restoreNumberContent(element, elementData) {
+		const { originalValue, percentageValue } = elementData;
+		
+		// Восстанавливаем data-атрибуты
+		if (originalValue) {
+			element.dataset.originalValue = originalValue;
+		}
+		if (percentageValue) {
+			element.dataset.percentageValue = percentageValue;
+		}
+		
+		// Устанавливаем текстовое содержимое (будет заменено на прогресс-бар при инициализации)
+		element.textContent = originalValue || `${percentageValue}%` || '';
 	}
 
 	/**

@@ -37,6 +37,7 @@ class ResumeEditor {
 	init() {
 		this.#findEditableElements();
 		this.#loadFromStorage();
+		// #initializeNumberElements() вызывается после loadFromStorage в #loadFromStorage
 		this.#attachEventListeners();
 	}
 
@@ -44,6 +45,8 @@ class ResumeEditor {
 		this.#editableElements = Array.from(
 			document.querySelectorAll('[contenteditable="true"]')
 		);
+
+
 
 		if (this.#editableElements.length === 0) {
 			console.warn('No editable elements found on the page');
@@ -53,7 +56,7 @@ class ResumeEditor {
 		// Инициализируем ripple эффект для всех .ripple элементов  
 		this.#materialWave.addToElements('.ripple', { 
 			color: 'primary',
-			duration: 1000
+			duration: 100000
 		});
 	}
 
@@ -63,8 +66,13 @@ class ResumeEditor {
 			if (data) {
 				this.#dataManager.restoreElementsData(this.#editableElements, data);
 			}
-		} catch {
+			// После восстановления данных инициализируем прогресс-бары
+			this.#initializeNumberElements();
+		} catch (error) {
+			console.error('Load error:', error);
 			notificationManager.showError('Error loading saved data', 3000, 'save-indicator');
+			// Даже при ошибке инициализируем прогресс-бары
+			this.#initializeNumberElements();
 		}
 	}
 
@@ -87,7 +95,8 @@ class ResumeEditor {
 			if (wasSaved) {
 				notificationManager.showSuccess('✓ Saved', 2000, 'save-indicator');
 			}
-		} catch {
+		} catch (error) {
+			console.error('Save error:', error);
 			notificationManager.showError('⚠ Error saving', 3000, 'save-indicator');
 		}
 	}
@@ -116,6 +125,11 @@ class ResumeEditor {
 	#handleFocus(event) {
 		const element = event.target;
 		element.classList.add('editing');
+
+		// Для элементов с data-type="number" восстанавливаем текстовое значение
+		if (element.dataset.type === 'number') {
+			this.#restoreNumberText(element);
+		}
 	}
 
 	#handleBlur(event) {
@@ -126,11 +140,45 @@ class ResumeEditor {
 			this.#normalizeListContent(element);
 		}
 
+		if (element.dataset.type === 'number') {
+			this.#normalizeNumberContent(element);
+		}
+
 		this.#debouncedSave();
 	}
 
 	#normalizeListContent(element) {
 		this.#dataManager.normalizeListContent(element);
+	}
+
+	#normalizeNumberContent(element) {
+		this.#dataManager.normalizeNumberContent(element);
+	}
+
+	#restoreNumberText(element) {
+		this.#dataManager.restoreNumberText(element);
+	}
+
+	#initializeNumberElements() {
+		// Инициализируем прогресс-бары для всех элементов с data-type="number"
+		const numberElements = document.querySelectorAll('[data-type="number"]');
+		numberElements.forEach(element => {
+			// Только если элемент еще не в progress-mode
+			if (!element.classList.contains('progress-mode')) {
+				const percentageValue = element.dataset.percentageValue;
+				
+				// Если есть сохраненные data-атрибуты, используем их для прогресс-бара
+				if (percentageValue) {
+					const percentage = parseFloat(percentageValue);
+					element.classList.add('progress-mode');
+					element.style.setProperty('--progress-width', `${percentage}%`);
+					element.textContent = ''; // Очищаем текст, ::after покажет процент
+				} else {
+					// Иначе нормализуем как обычно
+					this.#normalizeNumberContent(element);
+				}
+			}
+		});
 	}
 
 	destroy() {
