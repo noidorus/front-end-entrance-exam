@@ -2,6 +2,7 @@ import { notificationManager } from './notificationManager.js';
 import { DataManager } from './dataManager.js';
 import { MaterialWave } from './materialWave.js';
 import PDFGenerator from './pdfGenerator.js';
+import '../css/material-wave.css';
 
 class ResumeEditor {
 	static DEFAULT_STORAGE_KEY = 'resume-data';
@@ -43,7 +44,7 @@ class ResumeEditor {
 		
 		this.#materialWave.addToElements('.ripple', { 
 			color: 'primary',
-			duration: 100000
+			duration: 1000
 		});
 	}
 
