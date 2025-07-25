@@ -1,13 +1,204 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite App</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="./js/main.js"></script>
-  </body>
+	<head>
+		<meta charset="UTF-8" />
+		<link rel="icon" type="image/svg+xml" href="/vite.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+			rel="stylesheet"
+		/>
+		<link rel="stylesheet" href="./src/css/style.css" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Vite App</title>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+	</head>
+	<body spellcheck="false">
+		<div class="pdf-controls">
+			<button class="pdf-save-btn" id="savePdfBtn">📄 Сохранить как PDF</button>
+		</div>
+
+		<main id="app">
+			<div class="profile-container">
+				<img class="profile-image" src="./public/photo.png" alt="Profile Image" />
+			</div>
+
+			<section class="section name-box ripple">
+				<p class="name-box__greeting" contenteditable="true">Hello, I'm</p>
+				<div>
+					<h1 class="name-box__name" contenteditable="true">John Doe</h1>
+					<p class="name-box__role" contenteditable="true">Frontend Developer</p>
+				</div>
+			</section>
+
+			<section class="section language-box ripple">
+				<h2 class="section__title">Languages</h2>
+				<ul class="language-box__list">
+					<li class="language-box__item">
+						<span class="language-box__name" contenteditable="true">Russian</span>
+						<div class="language-box__level" contenteditable="true" data-type="number">80%</div>
+					</li>
+					<li class="language-box__item">
+						<span class="language-box__name" contenteditable="true">English</span>
+						<div class="language-box__level" contenteditable="true" data-type="number">70%</div>
+					</li>
+					<li class="language-box__item">
+						<span class="language-box__name" contenteditable="true">Spanish</span>
+						<div class="language-box__level" contenteditable="true" data-type="number">60%</div>
+					</li>
+				</ul>
+			</section>
+
+			<section class="section experience-box">
+				<h2 class="section__title">Experience</h2>
+				<ul class="experience-box__list">
+					<li class="experience-box__item most-recent ripple">
+						<div class="experience-box__header">
+							<span class="experience-box__date" contenteditable="true">2025-present</span>
+							<span class="experience-box__tag">most recent</span>
+						</div>
+						<div class="experience-box__content">
+							<div class="experience-box__info">
+								<h3 class="experience-box__role" contenteditable="true">Frontend Developer</h3>
+								<span class="experience-box__company" contenteditable="true"
+									>Black Games | Full-time</span
+								>
+							</div>
+							<ul class="experience-box__points" contenteditable="true" data-type="list">
+								<li>Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.</li>
+								<li>Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.</li>
+							</ul>
+						</div>
+					</li>
+					<li class="experience-box__item ripple">
+						<div class="experience-box__header">
+							<span class="experience-box__date" contenteditable="true">2023-2025</span>
+						</div>
+						<div class="experience-box__content">
+							<div class="experience-box__info">
+								<h3 class="experience-box__role" contenteditable="true">Frontend Developer</h3>
+								<span class="experience-box__info" contenteditable="true">Freelance</span>
+							</div>
+							<ul class="experience-box__points" contenteditable="true" data-type="list">
+								<li>Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.</li>
+								<li>Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.</li>
+							</ul>
+						</div>
+					</li>
+					<li class="experience-box__item ripple">
+						<div class="experience-box__header">
+							<span class="experience-box__date" contenteditable="true">2022-2023</span>
+						</div>
+						<div class="experience-box__content">
+							<div class="experience-box__info">
+								<h3 class="experience-box__role" contenteditable="true">Frontend Developer</h3>
+								<span class="experience-box__info" contenteditable="true">Freelance</span>
+							</div>
+							<ul class="experience-box__points" contenteditable="true" data-type="list">
+								<li>Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.</li>
+								<li>Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.</li>
+							</ul>
+						</div>
+					</li>
+				</ul>
+			</section>
+
+			<section class="section tools-box">
+				<h2 class="section__title">Tools</h2>
+				<ul class="tools-box__list">
+					<li class="tools-box__item">
+						<h4 class="tools-box__tag">design</h4>
+						<div class="tools-box__logos">
+							<img src="/public/logos/figma.svg" alt="figma" />
+							<img src="/public/logos/photoshop.svg" alt="figma" />
+							<img src="/public/logos/illustrator.svg" alt="figma" />
+							<img src="/public/logos/premiere.svg" alt="figma" />
+							<img src="/public/logos/notion.svg" alt="figma" />
+							<img src="/public/logos/meets.svg" alt="figma" />
+						</div>
+					</li>
+					<li class="tools-box__item">
+						<h4 class="tools-box__tag">no-code</h4>
+						<div class="tools-box__logos">
+							<img src="/public/logos/zapier.svg" alt="figma" />
+							<img src="/public/logos/webflow.svg" alt="figma" />
+							<img src="/public/logos/framer.svg" alt="figma" />
+							<img src="/public/logos/wordpress.svg" alt="figma" />
+						</div>
+					</li>
+					<li class="tools-box__item">
+						<h4 class="tools-box__tag">artoficial intelligence</h4>
+						<div class="tools-box__logos">
+							<img src="/public/logos/gpt.svg" alt="figma" />
+							<img src="/public/logos/copilot.svg" alt="figma" />
+							<img src="/public/logos/midjourney.svg" alt="figma" />
+						</div>
+					</li>
+				</ul>
+			</section>
+
+			<section class="section education-box">
+				<h2 class="section__title">Education</h2>
+				<ul class="education-box__list">
+					<li class="education-box__item most-recent ripple">
+						<span class="education-box__date" contenteditable="true">2024.09-2024.12</span>
+						<img src="/public/heart.svg" alt="heart" />
+						<div class="education-box__content">
+							<h3 class="education-box__role" contenteditable="true">Backend Developer</h3>
+							<p class="education-box__tags" contenteditable="true">
+								#Node.js #Nest #PostgreSQL #Docker #CI/CD
+							</p>
+						</div>
+						<span class="education-box__area" contenteditable="true">TBank Fintech</span>
+					</li>
+					<li class="education-box__item ripple">
+						<span class="education-box__date" contenteditable="true">2022.09-2023.03</span>
+						<div class="education-box__content">
+							<h3 class="education-box__role" contenteditable="true">Frontend Developer</h3>
+							<p class="education-box__tags" contenteditable="true">#HTML #CSS #JavaScript #React</p>
+						</div>
+						<span class="education-box__area" contenteditable="true">Rolling Scopes School</span>
+					</li>
+					<li class="education-box__item ripple">
+						<span class="education-box__date" contenteditable="true">2018-2021</span>
+						<div class="education-box__content">
+							<h3 class="education-box__role" contenteditable="true">Bachelor of Management</h3>
+							<p class="education-box__tags" contenteditable="true">#Management #Marketing #Economics</p>
+						</div>
+						<span class="education-box__area" contenteditable="true"
+							>Izhevsk State Technical University</span
+						>
+					</li>
+				</ul>
+			</section>
+
+			<section class="extra-section">
+				<div class="section interests-box ripple">
+					<h2 class="section__title">Interests</h2>
+					<ul class="interests-box__content" data-type="list" contenteditable="true">
+						<li class="interests-box__tag">Snowboarding</li>
+						<li class="interests-box__tag">Rope jumping</li>
+						<li class="interests-box__tag">Traveling</li>
+						<li class="interests-box__tag">Reading</li>
+						<li class="interests-box__tag">Gaming</li>
+						<li class="interests-box__tag">Coding</li>
+						<li class="interests-box__tag">Sport</li>
+						<li class="interests-box__tag">Music</li>
+						<li class="interests-box__tag">Movies</li>
+						<li class="interests-box__tag">Cooking</li>
+					</ul>
+				</div>
+
+				<div class="contacts-box ripple">
+					<p class="contacts-box__message" contenteditable="true">
+						Let´s chat! I´m ready to work on excinting projects
+					</p>
+					<p class="contacts-box__contact" contenteditable="true">+7 (999) 999-99-99</p>
+				</div>
+			</section>
+		</main>
+		<script type="module" src="./src/js/main.js"></script>
+	</body>
 </html>
