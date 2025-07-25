@@ -12,18 +12,18 @@
 		<link rel="stylesheet" href="./src/css/style.css" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Vite App</title>
-		
-		<!-- HTML2PDF библиотека -->
+
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 	</head>
 	<body spellcheck="false">
-		<!-- PDF Save Controls -->
 		<div class="pdf-controls">
 			<button class="pdf-save-btn" id="savePdfBtn">📄 Сохранить как PDF</button>
 		</div>
 
 		<main id="app">
-			<img class="profile-image" src="./public/vite.svg" alt="Profile Image" />
+			<div class="profile-container">
+				<img class="profile-image" src="./public/photo.png" alt="Profile Image" />
+			</div>
 
 			<section class="section name-box ripple">
 				<p class="name-box__greeting" contenteditable="true">Hello, I'm</p>
