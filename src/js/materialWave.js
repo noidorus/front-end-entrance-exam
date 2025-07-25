@@ -1,144 +1,88 @@
 import '../css/material-wave.css';
 
 export class MaterialWave {
-	/** @type {string} */
-	static DEFAULT_COLOR = 'primary';
-
-	/** @type {number} */
-	static DEFAULT_DURATION = 600;
+	static DEFAULT_OPTIONS = {
+		color: 'primary',
+		duration: 600,
+		autoInit: true
+	};
 
 	/** @type {WeakMap<HTMLElement, AbortController>} */
-	#controllers = new WeakMap();
+	#elementControllers = new WeakMap();
 
-	/**
-	 * @param {Object} [options={}] - настройки для Material Wave
-	 * @param {string} [options.color='primary'] - цвет ripple эффекта
-	 * @param {number} [options.duration=600] - длительность анимации в мс
-	 * @param {boolean} [options.autoInit=true] - автоматическая инициализация
-	 */
+	/** @param {Object} [options] */
 	constructor(options = {}) {
-		this.options = {
-			color: options.color || MaterialWave.DEFAULT_COLOR,
-			duration: options.duration || MaterialWave.DEFAULT_DURATION,
-			autoInit: options.autoInit !== false
-		};
-
+		this.options = { ...MaterialWave.DEFAULT_OPTIONS, ...options };
+		
 		if (this.options.autoInit) {
-			this.#init();
+			this.addToElements('.ripple');
 		}
 	}
 
-	#init() {
-		const elements = document.querySelectorAll('.ripple');
-		elements.forEach((element) => this.attachToElement(element));
-	}
-
-	/**
-	 * @param {HTMLElement} element - элемент для добавления эффекта
-	 * @param {Object} [options={}] - дополнительные настройки
+	/** 
+	 * @param {string|HTMLElement|NodeList|HTMLElement[]} selector 
+	 * @param {Object} [elementOptions] 
 	 */
-	attachToElement(element, options = {}) {
-		if (!(element instanceof HTMLElement)) {
-			console.warn('MaterialWave: Invalid element provided');
-			return;
-		}
+	addToElements(selector, elementOptions = {}) {
+		const elements = this.#resolveElements(selector);
+		elements.forEach(element => this.attachToElement(element, elementOptions));
+	}
 
-		// Работаем только с элементами .ripple
-		if (!element.classList.contains('ripple')) {
-			element.classList.add('ripple');
-		}
-
-		this.detachFromElement(element);
+	/** 
+	 * @param {HTMLElement} element 
+	 * @param {Object} [elementOptions] 
+	 */
+	attachToElement(element, elementOptions = {}) {
+		if (this.#elementControllers.has(element)) return;
 
 		const controller = new AbortController();
-		this.#controllers.set(element, controller);
+		this.#elementControllers.set(element, controller);
 
-		const effectOptions = { ...this.options, ...options };
+		const options = { ...this.options, ...elementOptions };
 
-		element.addEventListener(
-			'mousedown',
-			(event) => {
-				this.#createRipple(element, event, effectOptions);
-			},
-			{ signal: controller.signal }
-		);
+		['mousedown', 'touchstart'].forEach(eventType => {
+			element.addEventListener(eventType, (e) => {
+				this.#createRipple(e, element, options);
+			}, { 
+				signal: controller.signal,
+				passive: true 
+			});
+		});
 
-		element.addEventListener(
-			'touchstart',
-			(event) => {
-				const touch = event.touches[0];
-				if (touch) {
-					this.#createRipple(element, touch, effectOptions);
-				}
-			},
-			{ signal: controller.signal, passive: true }
-		);
+		element.classList.add('ripple');
 	}
 
-	/**
-	 * @param {HTMLElement} element - элемент для отключения эффекта
-	 */
+	/** @param {HTMLElement} element */
 	detachFromElement(element) {
-		const controller = this.#controllers.get(element);
+		const controller = this.#elementControllers.get(element);
 		if (controller) {
 			controller.abort();
-			this.#controllers.delete(element);
+			this.#elementControllers.delete(element);
 		}
+		element.classList.remove('ripple');
 	}
 
-	/**
-	 * @param {string} selector - CSS селектор
-	 * @param {Object} [options={}] - настройки эффекта
+	/** 
+	 * @param {Event} event 
+	 * @param {HTMLElement} element 
+	 * @param {Object} options 
 	 */
-	addToElements(selector, options = {}) {
-		const elements = document.querySelectorAll(selector);
-		elements.forEach((element) => this.attachToElement(element, options));
-	}
-
-	/**
-	 * @param {HTMLElement} element - элемент для эффекта
-	 * @param {Object} [options={}] - настройки эффекта
-	 */
-	triggerRipple(element, options = {}) {
-		if (!(element instanceof HTMLElement)) {
-			console.warn('MaterialWave: Invalid element provided');
-			return;
-		}
-
+	#createRipple(event, element, options) {
 		const rect = element.getBoundingClientRect();
-		const centerX = rect.width / 2;
-		const centerY = rect.height / 2;
+		const size = Math.max(rect.width, rect.height);
+		const x = event.clientX - rect.left - size / 2;
+		const y = event.clientY - rect.top - size / 2;
 
-		const mockEvent = {
-			clientX: rect.left + centerX,
-			clientY: rect.top + centerY,
-		};
-
-		this.#createRipple(element, mockEvent, { ...this.options, ...options });
-	}
-
-	destroy() {
-		for (const [, controller] of this.#controllers) {
-			controller.abort();
-		}
-		this.#controllers = new WeakMap();
-	}
-
-	/**
-	 * @param {HTMLElement} element - родительский элемент
-	 * @param {MouseEvent|Touch} event - событие клика или касания
-	 * @param {Object} options - настройки эффекта
-	 */
-	#createRipple(element, event, options) {
-		const rect = element.getBoundingClientRect();
-		const x = (event.clientX || event.pageX) - rect.left;
-		const y = (event.clientY || event.pageY) - rect.top;
-
-		const ripple = document.createElement('div');
-		ripple.className = this.#getRippleClassName(options);
-
-		const size = this.#calculateRippleSize(rect, x, y);
-		this.#setRippleStyles(ripple, x, y, size);
+		const ripple = document.createElement('span');
+		ripple.className = 'material-wave-ripple';
+		ripple.style.cssText = `
+			width: ${size}px;
+			height: ${size}px;
+			left: ${x}px;
+			top: ${y}px;
+			background-color: ${this.#getColorValue(options.color)};
+			animation-duration: ${options.duration}ms;
+		`;
 
 		element.appendChild(ripple);
 
@@ -149,49 +93,45 @@ export class MaterialWave {
 		}, options.duration);
 	}
 
-	/**
-	 * @param {Object} options - настройки эффекта
-	 * @returns {string} строка с классами
+	/** 
+	 * @param {string|HTMLElement|NodeList|HTMLElement[]} selector 
+	 * @returns {HTMLElement[]} 
 	 */
-	#getRippleClassName(options) {
-		let className = 'material-wave-ripple';
-
-		if (options.color && options.color !== 'default') {
-			className += ` ${options.color}`;
+	#resolveElements(selector) {
+		if (typeof selector === 'string') {
+			return Array.from(document.querySelectorAll(selector));
 		}
-
-		if (options.duration < 400) {
-			className += ' fast';
-		} else if (options.duration > 700) {
-			className += ' slow';
+		if (selector instanceof HTMLElement) {
+			return [selector];
 		}
-
-		return className;
+		if (selector instanceof NodeList || Array.isArray(selector)) {
+			return Array.from(selector);
+		}
+		return [];
 	}
 
-	/**
-	 * @param {DOMRect} rect - размеры родительского элемента
-	 * @param {number} x - позиция X клика
-	 * @param {number} y - позиция Y клика
-	 * @returns {number} размер ripple
+	/** 
+	 * @param {string} color 
+	 * @returns {string} 
 	 */
-	#calculateRippleSize(rect, x, y) {
-		const maxX = Math.max(x, rect.width - x);
-		const maxY = Math.max(y, rect.height - y);
+	#getColorValue(color) {
+		const colorMap = {
+			primary: 'rgba(33, 150, 243, 0.3)',
+			secondary: 'rgba(255, 193, 7, 0.3)',
+			success: 'rgba(76, 175, 80, 0.3)',
+			error: 'rgba(244, 67, 54, 0.3)',
+			white: 'rgba(255, 255, 255, 0.3)',
+			black: 'rgba(0, 0, 0, 0.3)'
+		};
 
-		return Math.sqrt(maxX * maxX + maxY * maxY) * 2;
+		return colorMap[color] || color;
 	}
 
-	/**
-	 * @param {HTMLElement} ripple - элемент ripple
-	 * @param {number} x - позиция X
-	 * @param {number} y - позиция Y
-	 * @param {number} size - размер ripple
-	 */
-	#setRippleStyles(ripple, x, y, size) {
-		ripple.style.width = `${size}px`;
-		ripple.style.height = `${size}px`;
-		ripple.style.left = `${x - size / 2}px`;
-		ripple.style.top = `${y - size / 2}px`;
+	destroy() {
+		this.#elementControllers.forEach((controller, element) => {
+			controller.abort();
+			element.classList.remove('ripple');
+		});
+		this.#elementControllers.clear();
 	}
 }

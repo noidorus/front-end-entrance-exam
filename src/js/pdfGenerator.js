@@ -1,119 +1,69 @@
-import '../css/save-pdf-btn.css'
 import { notificationManager } from './notificationManager.js';
 
-class PDFGenerator {
-    constructor() {
-        this.initializeEventListeners();
-    }
+export default class PDFGenerator {
+	static BUTTON_SELECTOR = '#savePdfBtn';
+	static PDF_OPTIONS = {
+		margin: 0,
+		filename: 'resume.pdf',
+		image: { type: 'jpeg', quality: 0.98 },
+		html2canvas: { 
+			scale: 2,
+			useCORS: true,
+			allowTaint: true
+		},
+		jsPDF: { 
+			unit: 'mm', 
+			format: 'a4', 
+			orientation: 'portrait' 
+		}
+	};
 
-    initializeEventListeners() {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                this.attachEventListener();
-            });
-        } else {
-            this.attachEventListener();
-        }
-    }
+	static init() {
+		const pdfButton = document.querySelector(PDFGenerator.BUTTON_SELECTOR);
+		if (pdfButton) {
+			new PDFGenerator(pdfButton);
+		} else {
+			console.warn('PDF button not found');
+		}
+	}
 
-    attachEventListener() {
-        const saveBtn = document.getElementById('savePdfBtn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => this.generatePDF());
-        } else {
-            console.error('PDF save button not found');
-        }
-    }
+	/** @param {HTMLElement} button */
+	constructor(button) {
+		this.button = button;
+		this.#attachEventListener();
+	}
 
-    async generatePDF() {
-        const element = document.getElementById('app');
-        const saveBtn = document.getElementById('savePdfBtn');
-        
-        if (!element) {
-            console.error('Элемент для сохранения не найден');
-            return;
-        }
+	#attachEventListener() {
+		this.button.addEventListener('click', this.#handleClick.bind(this));
+	}
 
-        if (typeof window.html2pdf === 'undefined') {
-            console.error('HTML2PDF библиотека не загружена');
-            notificationManager.showError('Ошибка: PDF библиотека не загружена');
-            return;
-        }
+	/** @param {Event} event */
+	async #handleClick(event) {
+		event.preventDefault();
 
-        this.setLoadingState(saveBtn, true);
+		if (!window.html2pdf) {
+			notificationManager.showError('PDF library not loaded', 3000);
+			return;
+		}
 
-        try {
-            const nameElement = document.querySelector('.name-box__name');
-            const userName = nameElement ? nameElement.textContent.trim() : 'Resume';
-            const filename = `${userName.replace(/\s+/g, '_')}_Resume.pdf`;
+		const resumeContainer = document.querySelector('#app');
+		if (!resumeContainer) {
+			notificationManager.showError('Resume container not found', 3000);
+			return;
+		}
 
-            const options = {
-                margin: 1,
-                filename: filename,
-                image: { 
-                    type: 'jpeg', 
-                    quality: 0.9 
-                },
-                html2canvas: { 
-                    scale: 1.5,
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: '#ffffff',
-                    logging: true,
-                    width: element.scrollWidth,
-                    height: element.scrollHeight
-                },
-                jsPDF: { 
-                    unit: 'mm', 
-                    format: 'a4', 
-                    orientation: 'portrait'
-                }
-            };
+		try {
+			notificationManager.showSaving('Generating PDF...', 'pdf-generator');
+			
+			await window.html2pdf()
+				.set(PDFGenerator.PDF_OPTIONS)
+				.from(resumeContainer)
+				.save();
 
-            const pdfControls = document.querySelector('.pdf-controls');
-            if (pdfControls) {
-                pdfControls.style.display = 'none';
-            }
-
-            const worker = window.html2pdf();
-            await worker.set(options).from(element).save();
-
-            notificationManager.showSuccess('PDF успешно сохранен!');
-
-        } catch (error) {
-            console.error('Ошибка при генерации PDF:', error);
-            notificationManager.showError('Ошибка при сохранении PDF');
-        } finally {
-            const pdfControls = document.querySelector('.pdf-controls');
-            if (pdfControls) {
-                pdfControls.style.display = 'block';
-            }
-            
-            this.setLoadingState(saveBtn, false);
-        }
-    }
-
-    setLoadingState(button, isLoading) {
-        if (!button) return;
-
-        if (isLoading) {
-            button.disabled = true;
-            button.innerHTML = '⏳ Генерация PDF...';
-            button.style.opacity = '0.7';
-        } else {
-            button.disabled = false;
-            button.innerHTML = '📄 Сохранить как PDF';
-            button.style.opacity = '1';
-        }
-    }
-
-    setCustomOptions(customOptions) {
-        this.customOptions = customOptions;
-    }
-
-    static init() {
-        return new PDFGenerator();
-    }
-}
-
-export default PDFGenerator; 
+			notificationManager.showSuccess('PDF downloaded successfully!', 3000, 'pdf-generator');
+		} catch (error) {
+			console.error('PDF generation error:', error);
+			notificationManager.showError('Failed to generate PDF', 3000, 'pdf-generator');
+		}
+	}
+} 
