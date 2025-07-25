@@ -98,6 +98,10 @@ h6 {
 	line-height: 104%;
 }
 
+.language-box__level {
+	
+}
+
 /* Experience */
 .experience-box {
 	grid-column: span 3;

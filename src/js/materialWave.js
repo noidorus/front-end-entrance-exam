@@ -2,7 +2,7 @@ import '../css/material-wave.css';
 
 export class MaterialWave {
 	/** @type {string} */
-	static DEFAULT_COLOR = 'red';
+	static DEFAULT_COLOR = 'primary';
 
 	/** @type {number} */
 	static DEFAULT_DURATION = 600;
@@ -12,7 +12,7 @@ export class MaterialWave {
 
 	/**
 	 * @param {Object} [options={}] - настройки для Material Wave
-	 * @param {string} [options.color='default'] - цвет ripple эффекта
+	 * @param {string} [options.color='primary'] - цвет ripple эффекта
 	 * @param {number} [options.duration=600] - длительность анимации в мс
 	 * @param {boolean} [options.autoInit=true] - автоматическая инициализация
 	 */
@@ -20,7 +20,7 @@ export class MaterialWave {
 		this.options = {
 			color: options.color || MaterialWave.DEFAULT_COLOR,
 			duration: options.duration || MaterialWave.DEFAULT_DURATION,
-			autoInit: options.autoInit !== false,
+			autoInit: options.autoInit !== false
 		};
 
 		if (this.options.autoInit) {
@@ -29,7 +29,7 @@ export class MaterialWave {
 	}
 
 	#init() {
-		const elements = document.querySelectorAll('.material-wave');
+		const elements = document.querySelectorAll('.ripple');
 		elements.forEach((element) => this.attachToElement(element));
 	}
 
@@ -41,6 +41,11 @@ export class MaterialWave {
 		if (!(element instanceof HTMLElement)) {
 			console.warn('MaterialWave: Invalid element provided');
 			return;
+		}
+
+		// Работаем только с элементами .ripple
+		if (!element.classList.contains('ripple')) {
+			element.classList.add('ripple');
 		}
 
 		this.detachFromElement(element);
@@ -68,10 +73,6 @@ export class MaterialWave {
 			},
 			{ signal: controller.signal, passive: true }
 		);
-
-		if (!element.classList.contains('material-wave')) {
-			element.classList.add('material-wave');
-		}
 	}
 
 	/**
@@ -130,7 +131,6 @@ export class MaterialWave {
 	 */
 	#createRipple(element, event, options) {
 		const rect = element.getBoundingClientRect();
-
 		const x = (event.clientX || event.pageX) - rect.left;
 		const y = (event.clientY || event.pageY) - rect.top;
 
@@ -138,7 +138,6 @@ export class MaterialWave {
 		ripple.className = this.#getRippleClassName(options);
 
 		const size = this.#calculateRippleSize(rect, x, y);
-
 		this.#setRippleStyles(ripple, x, y, size);
 
 		element.appendChild(ripple);

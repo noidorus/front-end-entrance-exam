@@ -27,7 +27,11 @@ class ResumeEditor {
 	 */
 	constructor(storageKey = ResumeEditor.DEFAULT_STORAGE_KEY) {
 		this.#dataManager = new DataManager(storageKey);
-		this.#materialWave = new MaterialWave({ autoInit: false });
+		this.#materialWave = new MaterialWave({ 
+			autoInit: false, 
+			duration: 1000,
+			color: 'primary'
+		});
 	}
 
 	init() {
@@ -43,14 +47,14 @@ class ResumeEditor {
 
 		if (this.#editableElements.length === 0) {
 			console.warn('No editable elements found on the page');
-		} else {
-			this.#editableElements.forEach(element => {
-				this.#materialWave.attachToElement(element, { 
-					color: 'primary',
-					duration: 1000,
-				});
-			});
 		}
+		
+		// MaterialWave автоматически подключится к элементам с классом .ripple
+		// Инициализируем ripple эффект для всех .ripple элементов  
+		this.#materialWave.addToElements('.ripple', { 
+			color: 'primary',
+			duration: 1000
+		});
 	}
 
 	#loadFromStorage() {
