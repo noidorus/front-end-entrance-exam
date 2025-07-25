@@ -1,3 +1,6 @@
+# Ссылка на деплой
+https://front-end-entrance-exam-kappa.vercel.app/
+
 
 # Вступительный экзамен для Front-end разработчика
 
