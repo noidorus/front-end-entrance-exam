@@ -1,6 +1,7 @@
 import { SaveIndicator } from './saveIndecator.js';
 import { DataManager } from './dataManager.js';
 import { MaterialWave } from './materialWave.js';
+import PDFGenerator from './pdfGenerator.js';
 
 class ResumeEditor {
 	/** @type {string} */
@@ -143,5 +144,12 @@ class ResumeEditor {
 	}
 }
 
-const resumeEditor = new ResumeEditor();
-resumeEditor.init();
+// Ждем полной загрузки страницы включая внешние скрипты
+window.addEventListener('load', () => {
+    const resumeEditor = new ResumeEditor();
+    resumeEditor.init();
+
+    // Инициализация PDF генератора после загрузки всех ресурсов
+    PDFGenerator.init();
+    console.log('Resume editor and PDF generator initialized');
+});
