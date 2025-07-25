@@ -1,4 +1,4 @@
-import { SaveIndicator } from './saveIndecator.js';
+import { notificationManager } from './notificationManager.js';
 import { DataManager } from './dataManager.js';
 import { MaterialWave } from './materialWave.js';
 import PDFGenerator from './pdfGenerator.js';
@@ -13,9 +13,6 @@ class ResumeEditor {
 	/** @type {HTMLElement[]} */
 	#editableElements = [];
 	
-	/** @type {SaveIndicator} */
-	#saveIndicator;
-	
 	/** @type {DataManager} */
 	#dataManager;
 	
@@ -26,10 +23,9 @@ class ResumeEditor {
 	#saveTimeoutId = null;
 
 	/**
-	 * @param {string} [storageKey=DEFAULT_STORAGE_KEY] - ключ для localStorage
+	 * @param {string} [storageKey=DEFAULT_STORAGE_KEY]
 	 */
 	constructor(storageKey = ResumeEditor.DEFAULT_STORAGE_KEY) {
-		this.#saveIndicator = new SaveIndicator();
 		this.#dataManager = new DataManager(storageKey);
 		this.#materialWave = new MaterialWave({ autoInit: false });
 	}
@@ -64,7 +60,7 @@ class ResumeEditor {
 				this.#dataManager.restoreElementsData(this.#editableElements, data);
 			}
 		} catch {
-			this.#saveIndicator.showError('Error loading saved data');
+			notificationManager.showError('Error loading saved data', 3000, 'save-indicator');
 		}
 	}
 
@@ -85,10 +81,10 @@ class ResumeEditor {
 			const wasSaved = this.#dataManager.saveData(data);
 			
 			if (wasSaved) {
-				this.#saveIndicator.showSuccess();
+				notificationManager.showSuccess('✓ Saved', 2000, 'save-indicator');
 			}
 		} catch {
-			this.#saveIndicator.showError();
+			notificationManager.showError('⚠ Error saving', 3000, 'save-indicator');
 		}
 	}
 
@@ -138,18 +134,15 @@ class ResumeEditor {
 			clearTimeout(this.#saveTimeoutId);
 		}
 		
-		this.#saveIndicator.destroy();
+		notificationManager.hide('save-indicator');
 		this.#materialWave.destroy();
 		this.#editableElements = [];
 	}
 }
 
-// Ждем полной загрузки страницы включая внешние скрипты
 window.addEventListener('load', () => {
     const resumeEditor = new ResumeEditor();
     resumeEditor.init();
 
-    // Инициализация PDF генератора после загрузки всех ресурсов
     PDFGenerator.init();
-    console.log('Resume editor and PDF generator initialized');
 });
